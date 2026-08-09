@@ -4,3 +4,5 @@ flask-login==0.6.3
 werkzeug==3.0.1
 gunicorn==21.2.0
 requests==2.31.0
+psycopg2-binary==2.9.9
+vercel-wsgi==0.3.1
