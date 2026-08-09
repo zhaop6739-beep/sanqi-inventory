@@ -8,7 +8,12 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'sanqi-inventory-secret-key-2024'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
+    # Vercel 用 /tmp 目录存储 SQLite（只读文件系统）
+    import os
+    if os.environ.get('VERCEL'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/inventory.db'
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
