@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出入库记录 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; transition: all 0.3s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+        .main-content { margin-left: 240px; min-height: 100vh; }
+        .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 16px 30px; }
+        .table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .table { margin-bottom: 0; }
+        .table thead th { background: #f8f9fb; border: none; font-weight: 600; color: #555; font-size: 0.88rem; padding: 14px 16px; }
+        .table td { vertical-align: middle; border-color: #f2f2f2; padding: 12px 16px; }
+        .badge-warning-custom { background: #fff3e0; color: #e65100; }
+    </style>
+</head>
+<body>
+    {% include 'dashboard_header.html' %}
+    <div class="main-content">
+        <div class="topbar d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0 fw-bold"><i class="fas fa-clock-rotate-left text-secondary me-2"></i>出入库记录</h4>
+                <p class="mb-0 text-muted" style="font-size:0.85rem;">最近 100 条操作记录</p>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm" style="border-radius:10px;">
+                <i class="fas fa-arrow-left me-1"></i>返回看板
+            </a>
+        </div>
+        <div class="p-4">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>产品</th>
+                            <th>类型</th>
+                            <th>数量</th>
+                            <th>操作人</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for log in logs %}
+                        {% set p = None %}
+                        <tr>
+                            <td><small class="text-muted">{{ log.created_at }}</small></td>
+                            <td class="fw-semibold">{{ product_map.get(log.product_id, '产品#' ~ log.product_id) }}</td>
+                            <td>
+                                {% if log.change_type == 'in' %}
+                                    <span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>入库</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-arrow-up me-1"></i>出库</span>
+                                {% endif %}
+                            </td>
+                            <td class="{{ 'text-success' if log.change_type == 'in' else 'text-danger' }} fw-bold">
+                                {{ '+' if log.change_type == 'in' else '-' }}{{ log.quantity }}
+                            </td>
+                            <td><span class="badge badge-warning-custom">{{ log.operator }}</span></td>
+                            <td><small class="text-muted">{{ log.note or '-' }}</small></td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
+                                暂无记录
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

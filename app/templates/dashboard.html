@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制台 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; transition: all 0.3s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+        .sidebar .nav-link i { width: 22px; text-align: center; }
+        .main-content { margin-left: 240px; min-height: 100vh; }
+        .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 16px 30px; position: sticky; top: 0; z-index: 100; }
+        .stat-card { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .stat-card .card-body { padding: 24px; }
+        .stat-card .stat-icon { width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .table { margin-bottom: 0; }
+        .table thead th { background: #f8f9fb; border: none; font-weight: 600; color: #555; font-size: 0.88rem; padding: 14px 16px; }
+        .table td { vertical-align: middle; border-color: #f2f2f2; padding: 12px 16px; }
+        .badge-warning-custom { background: #fff3e0; color: #e65100; }
+        .badge-danger-custom { background: #fce4ec; color: #c62828; }
+        .badge-success-custom { background: #e8f5e9; color: #2e7d32; }
+        .stock-bar-wrap { background: #eee; border-radius: 6px; height: 8px; overflow: hidden; width: 120px; }
+        .stock-bar { height: 100%; border-radius: 6px; transition: width 0.5s; }
+        .warning-row { background: #fff8f8 !important; }
+        .warning-row td:first-child::before { content: '⚠ '; color: #e94560; }
+        .btn-action { padding: 5px 10px; font-size: 0.82rem; border-radius: 8px; }
+        .dropdown-menu { border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: none; padding: 8px; }
+        .dropdown-item { border-radius: 8px; padding: 8px 14px; font-size: 0.9rem; }
+        .dropdown-item i { width: 20px; }
+        .brand-text { color: #e94560; font-weight: 800; }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- 侧边栏 -->
+        <nav class="sidebar">
+            <div class="p-4 text-center border-bottom border-secondary">
+                <div style="width:52px;height:52px;background:linear-gradient(135deg,#e94560,#c23152);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:1.4rem;">
+                    <i class="fas fa-boxes-stacked"></i>
+                </div>
+                <h5 class="mt-3 mb-0 text-white fw-bold">三琪配送商</h5>
+                <p class="mb-0 text-white-50" style="font-size:0.8rem;">库存预警管理系统</p>
+            </div>
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a href="{{ url_for('dashboard') }}" class="nav-link active"><i class="fas fa-chart-pie"></i> 总览看板</a></li>
+                <li class="nav-item"><a href="{{ url_for('warnings') }}" class="nav-link"><i class="fas fa-triangle-exclamation"></i> 库存预警 <span class="badge bg-danger ms-1">{{ warning_count }}</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('logs') }}" class="nav-link"><i class="fas fa-clock-rotate-left"></i> 出入库记录</a></li>
+                <li class="nav-item"><a href="{{ url_for('add_product') }}" class="nav-link"><i class="fas fa-plus-circle"></i> 添加产品</a></li>
+                <li class="nav-item mt-3"><a href="{{ url_for('change_password') }}" class="nav-link"><i class="fas fa-key"></i> 修改密码</a></li>
+                <li class="nav-item"><a href="{{ url_for('logout') }}" class="nav-link text-danger"><i class="fas fa-right-from-bracket"></i> 退出登录</a></li>
+            </ul>
+        </nav>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <div class="topbar d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0 fw-bold"><i class="fas fa-chart-pie text-danger me-2"></i>总览看板</h4>
+                    <p class="mb-0 text-muted" style="font-size:0.85rem;">共 {{ total_count }} 个产品，<span class="text-danger fw-bold">{{ warning_count }}</span> 个低于预警值</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted"><i class="fas fa-user me-1"></i>{{ current_user.username }}</span>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <!-- 统计卡片 -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="stat-icon" style="background:#eaf4ff;color:#1976d2;"><i class="fas fa-box-open"></i></div>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:0.85rem;">产品总数</p>
+                                    <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-triangle-exclamation"></i></div>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:0.85rem;">库存预警</p>
+                                    <h3 class="mb-0 fw-bold text-danger">{{ warning_count }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-circle-check"></i></div>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:0.85rem;">库存正常</p>
+                                    <h3 class="mb-0 fw-bold text-success">{{ total_count - warning_count }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 警告提示 -->
+                {% if warning_count > 0 %}
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert" style="border-radius:12px;">
+                    <i class="fas fa-bell"></i>
+                    <div>
+                        <strong>注意：</strong>有 <strong>{{ warning_count }}</strong> 个产品库存低于预警值，请及时补货！
+                        <a href="{{ url_for('warnings') }}" class="alert-link ms-2">查看预警 →</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 产品列表 -->
+                <div class="table-wrap">
+                    <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-secondary"></i>产品库存</h5>
+                        <a href="{{ url_for('add_product') }}" class="btn btn-sm btn-danger" style="border-radius:10px;">
+                            <i class="fas fa-plus me-1"></i>添加产品
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>产品名称</th>
+                                    <th>分类</th>
+                                    <th>单位</th>
+                                    <th>当前库存</th>
+                                    <th>预警阈值</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for p in products %}
+                                {% set is_warning = p.stock < p.threshold %}
+                                <tr class="{{ 'warning-row' if is_warning else '' }}">
+                                    <td><span class="fw-semibold">{{ p.name }}</span></td>
+                                    <td><span class="badge badge-warning-custom">{{ p.category }}</span></td>
+                                    <td>{{ p.unit }}</td>
+                                    <td>
+                                        <span class="fw-bold {{ 'text-danger' if is_warning else 'text-success' }}" style="font-size:1.05rem;">{{ p.stock }}</span>
+                                        <div class="stock-bar-wrap d-inline-block ms-2 align-middle">
+                                            {% set pct = [100, (p.stock / (p.threshold * 2) * 100) | int] | max %}
+                                            <div class="stock-bar {{ 'bg-danger' if is_warning else 'bg-success' }}" style="width:{{ pct }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>{{ p.threshold }} {{ p.unit }}</td>
+                                    <td>
+                                        {% if is_warning %}
+                                            <span class="badge badge-danger-custom"><i class="fas fa-arrow-down me-1"></i>库存不足</span>
+                                        {% else %}
+                                            <span class="badge badge-success-custom"><i class="fas fa-check me-1"></i>正常</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle btn-action" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{{ url_for('stock_in', id=p.id) }}"><i class="fas fa-plus-circle text-success me-2"></i>入库</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('stock_out', id=p.id) }}"><i class="fas fa-minus-circle text-warning me-2"></i>出库</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('edit_product', id=p.id) }}"><i class="fas fa-edit text-primary me-2"></i>编辑</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('delete_product', id=p.id) }}" onsubmit="return confirm('确定删除「{{ p.name }}」？')">
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash me-2"></i>删除</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
+                                        还没有产品，<a href="{{ url_for('add_product') }}">点击添加</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

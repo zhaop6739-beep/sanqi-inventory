@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; }
+        .login-card { background: rgba(255,255,255,0.95); border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .brand-text { color: #e94560; font-weight: 800; font-size: 1.4rem; }
+        .btn-login { background: linear-gradient(135deg, #e94560, #c23152); border: none; border-radius: 12px; font-weight: 600; padding: 12px; font-size: 1.05rem; }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(233,69,96,0.4); }
+        .form-control { border-radius: 10px; border: 2px solid #e0e0e0; padding: 12px 16px; }
+        .form-control:focus { border-color: #e94560; box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #aaa; }
+        .input-icon input { padding-left: 42px; }
+        .logo-area { text-align: center; margin-bottom: 30px; }
+        .logo-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #e94560, #c23152); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 1.8rem; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="d-flex align-items-center justify-content-center min-vh-100 px-3">
+        <div class="login-card p-5" style="width: 100%; max-width: 420px;">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-boxes-stacked"></i></div>
+                <h4 class="brand-text mb-1">三琪配送商</h4>
+                <p class="text-muted mb-0" style="font-size: 0.9rem;">库存预警管理系统</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show py-2" role="alert">
+                    <i class="fas fa-{{ 'circle-exclamation' if category == 'error' else 'check-circle' }} me-1"></i> {{ message }}
+                    <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" autocomplete="off">
+                <div class="mb-3 input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" class="form-control" placeholder="请输入账号" required autofocus>
+                </div>
+                <div class="mb-4 input-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" class="form-control" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-login text-white w-100">
+                    <i class="fas fa-right-to-bracket me-2"></i>登 录
+                </button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<style>
+.sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+.sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; transition: all 0.3s; }
+.sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+.sidebar .nav-link i { width: 22px; text-align: center; }
+</style>
+<nav class="sidebar d-inline-block">
+    <div class="p-4 text-center border-bottom border-secondary">
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#e94560,#c23152);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:1.4rem;">
+            <i class="fas fa-boxes-stacked"></i>
+        </div>
+        <h5 class="mt-3 mb-0 text-white fw-bold">三琪配送商</h5>
+        <p class="mb-0 text-white-50" style="font-size:0.8rem;">库存预警管理系统</p>
+    </div>
+    <ul class="nav flex-column mt-3">
+        <li class="nav-item"><a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}"><i class="fas fa-chart-pie"></i> 总览看板</a></li>
+        <li class="nav-item"><a href="{{ url_for('warnings') }}" class="nav-link {{ 'active' if request.endpoint == 'warnings' else '' }}"><i class="fas fa-triangle-exclamation"></i> 库存预警</a></li>
+        <li class="nav-item"><a href="{{ url_for('logs') }}" class="nav-link {{ 'active' if request.endpoint == 'logs' else '' }}"><i class="fas fa-clock-rotate-left"></i> 出入库记录</a></li>
+        <li class="nav-item"><a href="{{ url_for('add_product') }}" class="nav-link {{ 'active' if request.endpoint == 'add_product' else '' }}"><i class="fas fa-plus-circle"></i> 添加产品</a></li>
+        <li class="nav-item mt-3"><a href="{{ url_for('change_password') }}" class="nav-link"><i class="fas fa-key"></i> 修改密码</a></li>
+        <li class="nav-item"><a href="{{ url_for('logout') }}" class="nav-link text-danger"><i class="fas fa-right-from-bracket"></i> 退出登录</a></li>
+    </ul>
+</nav>

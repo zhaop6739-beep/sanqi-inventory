@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存预警 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; transition: all 0.3s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+        .main-content { margin-left: 240px; min-height: 100vh; }
+        .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 16px 30px; }
+        .table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .table { margin-bottom: 0; }
+        .table thead th { background: #f8f9fb; border: none; font-weight: 600; color: #555; font-size: 0.88rem; padding: 14px 16px; }
+        .table td { vertical-align: middle; border-color: #f2f2f2; padding: 14px 16px; }
+        .progress { height: 10px; border-radius: 6px; background: #eee; }
+        .progress-bar.bg-danger { background: #e94560 !important; }
+        .btn-action { padding: 5px 10px; font-size: 0.82rem; border-radius: 8px; }
+        .dropdown-menu { border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: none; padding: 8px; }
+        .dropdown-item { border-radius: 8px; padding: 8px 14px; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 80px 20px; }
+        .empty-icon { width: 90px; height: 90px; background: #e8f5e9; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #2e7d32; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    {% include 'dashboard_header.html' %}
+    <div class="main-content">
+        <div class="topbar d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0 fw-bold"><i class="fas fa-triangle-exclamation text-danger me-2"></i>库存预警</h4>
+                <p class="mb-0 text-muted" style="font-size:0.85rem;">以下产品库存低于预警值，请及时补货</p>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm" style="border-radius:10px;">
+                <i class="fas fa-arrow-left me-1"></i>返回看板
+            </a>
+        </div>
+        <div class="p-4">
+            {% if products %}
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert" style="border-radius:12px;background:#fce4ec;border:none;">
+                <i class="fas fa-bell fa-lg"></i>
+                <div>
+                    共 <strong>{{ products|length }}</strong> 个产品需要关注！
+                    {% set lowest = products|first %}
+                    最紧缺：<strong>{{ lowest.name }}</strong>（仅剩 {{ lowest.stock }}{{ lowest.unit }}）
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>产品名称</th>
+                            <th>分类</th>
+                            <th>单位</th>
+                            <th>当前库存</th>
+                            <th>预警阈值</th>
+                            <th>缺口</th>
+                            <th>库存进度</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for p in products %}
+                        {% set gap = p.threshold - p.stock %}
+                        {% set pct = (p.stock / p.threshold * 100) | int %}
+                        <tr>
+                            <td><span class="fw-bold text-danger">{{ p.name }}</span></td>
+                            <td><span class="badge badge-warning-custom">{{ p.category }}</span></td>
+                            <td>{{ p.unit }}</td>
+                            <td><span class="fw-bold text-danger" style="font-size:1.1rem;">{{ p.stock }}</span></td>
+                            <td>{{ p.threshold }} {{ p.unit }}</td>
+                            <td><span class="badge bg-danger">缺 {{ gap }}</span></td>
+                            <td style="min-width:140px;">
+                                <div class="progress mb-1">
+                                    <div class="progress-bar bg-danger" style="width:{{ pct }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ pct }}%</small>
+                            </td>
+                            <td>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-outline-danger btn-sm dropdown-toggle btn-action" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{{ url_for('stock_in', id=p.id) }}"><i class="fas fa-plus-circle text-success me-2"></i>立即入库</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('edit_product', id=p.id) }}"><i class="fas fa-edit text-primary me-2"></i>调整阈值</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="table-wrap">
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-circle-check"></i></div>
+                    <h5 class="text-success">🎉 所有产品库存充足</h5>
+                    <p class="text-muted mb-4">目前没有任何产品低于预警值，干得漂亮！</p>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-success" style="border-radius:10px;">
+                        <i class="fas fa-chart-pie me-1"></i>返回总览
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

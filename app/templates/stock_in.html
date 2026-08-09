@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品入库 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+        .main-content { margin-left: 240px; min-height: 100vh; }
+        .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 16px 30px; }
+        .form-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 36px; max-width: 600px; }
+        .form-control { border-radius: 10px; border: 2px solid #e8e8e8; padding: 10px 14px; }
+        .form-control:focus { border-color: #e94560; box-shadow: 0 0 0 3px rgba(233,69,96,0.1); }
+    </style>
+</head>
+<body>
+    {% include 'dashboard_header.html' %}
+    <div class="main-content">
+        <div class="topbar">
+            <h4 class="mb-0 fw-bold"><i class="fas fa-plus-circle text-success me-2"></i>产品入库</h4>
+        </div>
+        <div class="p-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert" style="border-radius:12px;">
+                    {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <div class="form-card">
+                <div class="text-center mb-4">
+                    <div style="width:64px;height:64px;background:#eaf4ff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;color:#1976d2;"><i class="fas fa-box-open"></i></div>
+                    <h5 class="mt-2 mb-1">{{ product.name }}</h5>
+                    <span class="badge badge-warning-custom">{{ product.category }}</span>
+                    <p class="mt-2 mb-0 text-muted">当前库存：<strong class="{{ 'text-danger' if product.stock < product.threshold else 'text-success' }}" style="font-size:1.2rem;">{{ product.stock }}</strong> {{ product.unit }}</p>
+                    <small class="text-muted">预警阈值：{{ product.threshold }} {{ product.unit }}</small>
+                </div>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fas fa-arrow-right-to-bracket text-success me-1"></i>入库数量 *</label>
+                        <input type="number" name="quantity" class="form-control" min="1" placeholder="输入入库数量" required autofocus>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="fas fa-comment text-secondary me-1"></i>备注（可选）</label>
+                        <input type="text" name="note" class="form-control" placeholder="例如：供应商补货 / 退货入库">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success flex-grow-1" style="border-radius:10px;padding:12px;">
+                            <i class="fas fa-check me-1"></i>确认入库
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary" style="border-radius:10px;padding:12px;">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
