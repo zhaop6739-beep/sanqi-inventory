@@ -1,8 +1,67 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
+import requests
+import os
 from . import db, login_manager
 from .models import User, Product, StockLog
+
+# 企业微信配置（从环境变量读取）
+WECHAT_CORP_ID = os.environ.get('WECHAT_CORP_ID', '')
+WECHAT_AGENT_ID = os.environ.get('WECHAT_AGENT_ID', '')
+WECHAT_SECRET = os.environ.get('WECHAT_SECRET', '')
+WECHAT_TO_USER = os.environ.get('WECHAT_TO_USER', '@all')  # @all 或成员ID
+
+def get_wechat_access_token():
+    """获取企业微信 access_token"""
+    if not WECHAT_CORP_ID or not WECHAT_SECRET:
+        return None
+    url = f"https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={WECHAT_CORP_ID}&corpsecret={WECHAT_SECRET}"
+    try:
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        return data.get('access_token')
+    except Exception as e:
+        print(f"获取企业微信token失败: {e}")
+        return None
+
+def send_wechat_message(title, content, url=None):
+    """发送企业微信消息"""
+    if not WECHAT_CORP_ID or not WECHAT_AGENT_ID or not WECHAT_SECRET:
+        print("企业微信未配置，跳过推送")
+        return False
+    
+    access_token = get_wechat_access_token()
+    if not access_token:
+        return False
+    
+    msg_url = f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}"
+    
+    # 使用文本卡片消息，更醒目
+    data = {
+        "touser": WECHAT_TO_USER,
+        "msgtype": "textcard",
+        "agentid": WECHAT_AGENT_ID,
+        "textcard": {
+            "title": title,
+            "description": content,
+            "url": url or "https://work.weixin.qq.com",
+            "btntxt": "查看详情"
+        }
+    }
+    
+    try:
+        resp = requests.post(msg_url, json=data, timeout=10)
+        result = resp.json()
+        if result.get('errcode') == 0:
+            print(f"企业微信推送成功: {title}")
+            return True
+        else:
+            print(f"企业微信推送失败: {result}")
+            return False
+    except Exception as e:
+        print(f"企业微信推送异常: {e}")
+        return False
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -114,6 +173,12 @@ def init_routes(app):
             db.session.add(log)
             db.session.commit()
             flash(f'入库成功：{p.name} +{qty}{p.unit}', 'success')
+            # 入库推送通知
+            send_wechat_message(
+                title=f"📦 入库通知 - {p.name}",
+                content=f"<div class=\"gray\">产品：{p.name}</div> <div class=\"normal\">入库数量：+{qty} {p.unit}</div><div class=\"normal\">当前库存：{p.stock} {p.unit}</div><div class=\"highlight\">操作人：{current_user.username}</div>",
+                url=request.url_root
+            )
             return redirect(url_for('dashboard'))
         return render_template('stock_in.html', product=p)
 
@@ -137,6 +202,19 @@ def init_routes(app):
             db.session.add(log)
             db.session.commit()
             flash(f'出库成功：{p.name} -{qty}{p.unit}', 'success')
+            # 出库推送通知
+            send_wechat_message(
+                title=f"🚚 出库通知 - {p.name}",
+                content=f"<div class=\"gray\">产品：{p.name}</div> <div class=\"normal\">出库数量：-{qty} {p.unit}</div><div class=\"normal\">当前库存：{p.stock} {p.unit}</div><div class=\"highlight\">操作人：{current_user.username}</div>",
+                url=request.url_root
+            )
+            # 如果库存低于预警值，额外推送预警
+            if p.stock < p.threshold:
+                send_wechat_message(
+                    title=f"⚠️ 库存预警 - {p.name}",
+                    content=f"<div class=\"gray\">产品：{p.name}</div><div class=\"warning\">当前库存：<b>{p.stock}</b> {p.unit}</div><div class=\"normal\">预警阈值：{p.threshold} {p.unit}</div><div class=\"highlight\">请及时补货！</div>",
+                    url=request.url_root + 'warnings'
+                )
             return redirect(url_for('dashboard'))
         return render_template('stock_out.html', product=p)
 
@@ -189,6 +267,35 @@ def init_routes(app):
             'warning': p.stock < p.threshold,
             'created_at': p.created_at
         } for p in products])
+
+    @app.route('/settings', methods=['GET', 'POST'])
+    @login_required
+    def settings():
+        """系统设置 - 企业微信配置"""
+        if request.method == 'POST':
+            # 这里只是展示，实际配置通过环境变量
+            flash('企业微信配置请通过环境变量设置', 'info')
+        wechat_configured = bool(WECHAT_CORP_ID and WECHAT_AGENT_ID and WECHAT_SECRET)
+        return render_template('settings.html', wechat_configured=wechat_configured)
+
+    @app.route('/test-wechat', methods=['POST'])
+    @login_required
+    def test_wechat():
+        """测试企业微信推送"""
+        if not WECHAT_CORP_ID or not WECHAT_AGENT_ID or not WECHAT_SECRET:
+            flash('企业微信未配置，请先设置环境变量', 'error')
+            return redirect(url_for('settings'))
+        
+        success = send_wechat_message(
+            title="✅ 测试消息 - 三琪库存系统",
+            content=f"<div class=\"gray\">这是一条测试消息</div><div class=\"normal\">发送时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div><div class=\"highlight\">如果收到这条消息，说明推送配置成功！</div>",
+            url=request.url_root
+        )
+        if success:
+            flash('测试消息已发送，请查看企业微信', 'success')
+        else:
+            flash('测试消息发送失败，请检查配置', 'error')
+        return redirect(url_for('settings'))
 
     # Seed initial admin
     with app.app_context():

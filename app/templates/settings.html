@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - 三琪配送商库存系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; position: fixed; width: 240px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.75); border-radius: 10px; margin: 3px 10px; padding: 10px 16px; transition: all 0.3s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(233,69,96,0.2); color: #fff; }
+        .main-content { margin-left: 240px; min-height: 100vh; }
+        .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 16px 30px; }
+        .settings-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 30px; margin-bottom: 24px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+        .status-ok { background: #e8f5e9; color: #2e7d32; }
+        .status-off { background: #fce4ec; color: #c62828; }
+        .code-block { background: #f8f9fa; border-radius: 10px; padding: 16px; font-family: 'Consolas', monospace; font-size: 0.85rem; color: #555; }
+    </style>
+</head>
+<body>
+    {% include 'dashboard_header.html' %}
+    <div class="main-content">
+        <div class="topbar">
+            <h4 class="mb-0 fw-bold"><i class="fas fa-cog text-secondary me-2"></i>系统设置</h4>
+        </div>
+        <div class="p-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert" style="border-radius:12px;">
+                    {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <!-- 企业微信配置 -->
+            <div class="settings-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="mb-1 fw-bold"><i class="fab fa-weixin text-success me-2"></i>企业微信推送</h5>
+                        <p class="mb-0 text-muted" style="font-size:0.85rem;">库存出入库、预警自动推送至企业微信</p>
+                    </div>
+                    {% if wechat_configured %}
+                        <span class="status-badge status-ok"><i class="fas fa-check-circle"></i> 已配置</span>
+                    {% else %}
+                        <span class="status-badge status-off"><i class="fas fa-times-circle"></i> 未配置</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">配置说明</h6>
+                    <ol class="text-muted" style="font-size:0.9rem; line-height:1.8;">
+                        <li>登录 <a href="https://work.weixin.qq.com" target="_blank">企业微信管理后台</a></li>
+                        <li>进入「我的企业」→ 获取「企业ID」(CorpID)</li>
+                        <li>进入「应用管理」→ 创建应用 → 获取「AgentId」和「Secret」</li>
+                        <li>在 Railway/Render 后台添加以下环境变量：</li>
+                    </ol>
+                    <div class="code-block">
+WECHAT_CORP_ID=你的企业ID
+WECHAT_AGENT_ID=你的应用ID
+WECHAT_SECRET=你的应用密钥
+WECHAT_TO_USER=@all  # @all表示全员，或填成员ID如：ZhangSan|LiSi
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('test_wechat') }}">
+                    <button type="submit" class="btn btn-success" style="border-radius:10px;" {{ 'disabled' if not wechat_configured else '' }}>
+                        <i class="fas fa-paper-plane me-1"></i>发送测试消息
+                    </button>
+                    {% if not wechat_configured %}
+                        <span class="text-muted ms-2" style="font-size:0.85rem;">（请先配置环境变量）</span>
+                    {% endif %}
+                </form>
+            </div>
+
+            <!-- 推送场景说明 -->
+            <div class="settings-card">
+                <h5 class="mb-3 fw-bold"><i class="fas fa-bell text-warning me-2"></i>推送场景</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:#e8f5e9;">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-arrow-down text-success"></i>
+                                <span class="fw-semibold">入库通知</span>
+                            </div>
+                            <p class="mb-0 text-muted" style="font-size:0.8rem;">产品入库时自动推送，显示入库数量和当前库存</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:#fff3e0;">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-arrow-up text-warning"></i>
+                                <span class="fw-semibold">出库通知</span>
+                            </div>
+                            <p class="mb-0 text-muted" style="font-size:0.8rem;">产品出库时自动推送，显示出库数量和剩余库存</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:#fce4ec;">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                <span class="fw-semibold">库存预警</span>
+                            </div>
+                            <p class="mb-0 text-muted" style="font-size:0.8rem;">出库后库存低于预警值时，额外推送补货提醒</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary" style="border-radius:10px;">
+                <i class="fas fa-arrow-left me-1"></i>返回看板
+            </a>
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

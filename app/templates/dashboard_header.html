@@ -17,6 +17,7 @@
         <li class="nav-item"><a href="{{ url_for('warnings') }}" class="nav-link {{ 'active' if request.endpoint == 'warnings' else '' }}"><i class="fas fa-triangle-exclamation"></i> 库存预警</a></li>
         <li class="nav-item"><a href="{{ url_for('logs') }}" class="nav-link {{ 'active' if request.endpoint == 'logs' else '' }}"><i class="fas fa-clock-rotate-left"></i> 出入库记录</a></li>
         <li class="nav-item"><a href="{{ url_for('add_product') }}" class="nav-link {{ 'active' if request.endpoint == 'add_product' else '' }}"><i class="fas fa-plus-circle"></i> 添加产品</a></li>
+        <li class="nav-item"><a href="{{ url_for('settings') }}" class="nav-link {{ 'active' if request.endpoint == 'settings' else '' }}"><i class="fas fa-cog"></i> 系统设置</a></li>
         <li class="nav-item mt-3"><a href="{{ url_for('change_password') }}" class="nav-link"><i class="fas fa-key"></i> 修改密码</a></li>
         <li class="nav-item"><a href="{{ url_for('logout') }}" class="nav-link text-danger"><i class="fas fa-right-from-bracket"></i> 退出登录</a></li>
     </ul>
